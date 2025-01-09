@@ -49,3 +49,19 @@ class URLViewSet(viewsets.ModelViewSet):
             return redirect(url.long_url)
         except URL.DoesNotExist:
             raise Http404("Short URL does not exist")
+
+    @action(detail=True, methods=["get"])
+    def qr_code(self, request, pk=None):
+        """
+        Retrieve the QR code for the shortened URL if it exists.
+        """
+        try:
+            url = self.get_object()
+            if url.qr_code:
+                qr_code_url = url.qr_code.url
+                return Response({"qr_code_url": qr_code_url}, status=200)
+            return Response(
+                {"error": "QR code not available for this URL."}, status=404
+            )
+        except URL.DoesNotExist:
+            raise Http404("URL does not exist")
