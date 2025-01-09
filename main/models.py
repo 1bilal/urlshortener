@@ -16,6 +16,9 @@ class URL(models.Model):
     expiry_date = models.DateTimeField(null=True, blank=True)
     qr_code = models.ImageField(upload_to="qrcodes/", blank=True, null=True)
 
+    # Analytics fields
+    click_count = models.PositiveIntegerField(default=0)
+
     def __str__(self):
         return self.long_url
 
@@ -42,3 +45,13 @@ class URL(models.Model):
         if not self.qr_code:
             self.generate_qr_code()
         super().save(*args, **kwargs)
+
+
+class URLAccessLog(models.Model):
+    url = models.ForeignKey(URL, related_name="access_logs", on_delete=models.CASCADE)
+    access_time = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField()
+    user_agent = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Access log for {self.url.short_url} at {self.access_time}"

@@ -13,4 +13,10 @@ urlpatterns = [
     path("api/", include(router.urls)),  # API routes for CRUD operations
     # Redirect Endpoint
     path("<str:short_url>/", URLViewSet.as_view({"get": "redirect"}), name="redirect"),
+    # Analytics Endpoint
+    path(
+        "api/urls/<str:pk>/analytics/",
+        URLViewSet.as_view({"get": "analytics"}),
+        name="url-analytics",
+    ),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

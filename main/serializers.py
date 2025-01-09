@@ -2,9 +2,7 @@ from django.utils.timezone import now
 from rest_framework import serializers
 from urllib.parse import urlparse
 from .models import URL
-from .utils import (
-    generate_short_url,
-)  # Assuming you have this utility for generating short URLs
+from .utils import generate_short_url
 
 
 class URLSerializer(serializers.ModelSerializer):
@@ -48,6 +46,7 @@ class URLDetailSerializer(serializers.ModelSerializer):
             "updated_at",
             "expiry_date",
             "qr_code_url",
+            "click_count",  # Add click count for analytics
         ]
 
     def get_qr_code_url(self, obj):
@@ -55,3 +54,22 @@ class URLDetailSerializer(serializers.ModelSerializer):
         if obj.qr_code:
             return obj.qr_code.url  # Returns the relative URL to the QR code
         return None
+
+
+class URLAnalyticsSerializer(serializers.ModelSerializer):
+    access_logs = serializers.SerializerMethodField()
+
+    class Meta:
+        model = URL
+        fields = ["short_url", "click_count", "access_logs"]
+
+    def get_access_logs(self, obj):
+        """Retrieve access logs for the URL."""
+        return [
+            {
+                "access_time": log.access_time,
+                "ip_address": log.ip_address,
+                "user_agent": log.user_agent,
+            }
+            for log in obj.access_logs.all().order_by("-access_time")
+        ]
