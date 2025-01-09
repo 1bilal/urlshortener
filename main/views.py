@@ -19,11 +19,32 @@ class URLViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         """
-        Create a new shortened URL with optional expiration date.
+        Create a new shortened URL with optional expiration date and custom slug.
         """
+        # Check if a custom short_url is provided in the request
+        short_url = request.data.get("short_url", None)
+
+        # If no custom short_url, use the generate_short_url function
+        if not short_url:
+            serializer = URLSerializer(data=request.data)
+            if serializer.is_valid():
+                # Automatically generate short_url using model method
+                instance = serializer.save(
+                    short_url=None
+                )  # Let the model generate the short_url
+                response_data = URLDetailSerializer(
+                    instance
+                ).data  # Use detail serializer
+                return Response(response_data, status=201)
+            return Response(serializer.errors, status=400)
+
+        # If custom short_url is provided, we validate and save
         serializer = URLSerializer(data=request.data)
         if serializer.is_valid():
-            short_url = generate_short_url(serializer.validated_data["long_url"])
+            # Ensure custom short_url is unique
+            if URL.objects.filter(short_url=short_url).exists():
+                return Response({"error": "Short URL already exists."}, status=400)
+
             instance = serializer.save(short_url=short_url)
             response_data = URLDetailSerializer(instance).data  # Use detail serializer
             return Response(response_data, status=201)

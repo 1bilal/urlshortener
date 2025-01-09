@@ -2,6 +2,7 @@
 from django.db import models
 from django.utils.timezone import now
 from django.core.files.base import ContentFile
+from django.utils.text import slugify
 
 # Third-party imports
 import qrcode
@@ -10,7 +11,7 @@ from io import BytesIO
 
 class URL(models.Model):
     long_url = models.URLField()
-    short_url = models.CharField(max_length=50)
+    short_url = models.CharField(max_length=50, unique=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     expiry_date = models.DateTimeField(null=True, blank=True)
@@ -40,8 +41,19 @@ class URL(models.Model):
         )
         self.save()
 
+    def generate_short_url(self):
+        """Generate a unique short URL if custom slug is not provided."""
+        if not self.short_url:
+            self.short_url = slugify(self.long_url)[
+                :50
+            ]  # Slugify long URL and trim to 50 chars
+            if URL.objects.filter(short_url=self.short_url).exists():
+                # Handle collision by adding a unique identifier if the slug already exists
+                self.short_url = f"{self.short_url[:45]}-{str(self.pk)}"
+
     def save(self, *args, **kwargs):
-        # Generate the QR code when a URL is created or updated
+        # Generate short URL and QR code when a URL is created or updated
+        self.generate_short_url()  # Ensure short_url is generated before saving
         if not self.qr_code:
             self.generate_qr_code()
         super().save(*args, **kwargs)

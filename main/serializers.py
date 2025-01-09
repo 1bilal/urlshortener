@@ -7,8 +7,9 @@ from .utils import generate_short_url
 
 class URLSerializer(serializers.ModelSerializer):
     short_url = serializers.CharField(
-        read_only=True
-    )  # Include short_url in the response (read-only)
+        required=False,  # Allow the short_url to be optional for the creation
+        allow_blank=True,
+    )
 
     class Meta:
         model = URL
@@ -27,10 +28,24 @@ class URLSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Invalid URL format.")
         return value
 
+    def validate_short_url(self, value):
+        """Validate that the custom short_url is unique."""
+        if value and URL.objects.filter(short_url=value).exists():
+            raise serializers.ValidationError("Short URL already exists.")
+        return value
+
     def create(self, validated_data):
-        """Generate a short URL and create the URL instance."""
-        short_url = generate_short_url(validated_data["long_url"])
-        url_instance = URL.objects.create(short_url=short_url, **validated_data)
+        """Generate a short URL or use custom short_url, and create the URL instance."""
+        short_url = validated_data.get("short_url", None)
+        if not short_url:
+            short_url = generate_short_url(
+                validated_data["long_url"]
+            )  # Generate if not provided
+
+        # Ensure the custom short URL is unique
+        validated_data["short_url"] = short_url
+
+        url_instance = URL.objects.create(**validated_data)
         return url_instance
 
 

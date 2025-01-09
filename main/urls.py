@@ -11,11 +11,11 @@ router.register(r"urls", URLViewSet, basename="url")
 urlpatterns = [
     # API Endpoints
     path("api/", include(router.urls)),  # API routes for CRUD operations
-    # Redirect Endpoint
+    # Redirect Endpoint (using short_url)
     path("<str:short_url>/", URLViewSet.as_view({"get": "redirect"}), name="redirect"),
-    # Analytics Endpoint
+    # Analytics Endpoint for a specific URL (by short_url)
     path(
-        "api/urls/<str:pk>/analytics/",
+        "api/urls/<str:short_url>/analytics/",  # Updated to use short_url instead of pk
         URLViewSet.as_view({"get": "analytics"}),
         name="url-analytics",
     ),
